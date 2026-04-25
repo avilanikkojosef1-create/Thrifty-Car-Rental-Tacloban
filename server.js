@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,11 +12,28 @@ const PORT = process.env.PORT || 3000;
 
 // Serve static files from the dist directory
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, { index: false })); // Don't serve index.html automatically
 
-// For all other routes, serve index.html (SPA routing)
+// For all other routes, serve index.html with injected runtime env vars (SPA routing)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  const indexPath = path.join(distPath, 'index.html');
+  try {
+    let html = fs.readFileSync(indexPath, 'utf8');
+    
+    // Inject runtime environment variables
+    const envVars = {
+      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
+      VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ''
+    };
+    
+    const envScript = `<script>window.__ENV__ = ${JSON.stringify(envVars)};</script>`;
+    html = html.replace('</head>', `${envScript}</head>`);
+    
+    res.send(html);
+  } catch (err) {
+    console.error('Error serving index.html:', err);
+    res.status(404).send('Not Found: the build output is missing. Ensure the app is correctly built.');
+  }
 });
 
 // Bind to 0.0.0.0 to ensure Cloud Run can route traffic to it
