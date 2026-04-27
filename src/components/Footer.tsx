@@ -63,7 +63,7 @@ export default function Footer() {
       <div className="border-white/10 mx-auto mt-16 flex max-w-7xl flex-col items-center justify-between gap-6 border-t px-6 pt-8 md:flex-row">
         <p className="font-inter text-sm text-white/30 flex items-center gap-4">
           <span>© 2026 Thrifty Car Rental Tacloban. All rights reserved.</span>
-          <Link to="/login" className="hover:text-primary-gold transition-colors">Admin Login</Link>
+          <Link to="/login" className="hover:text-primary-gold transition-colors">Admin</Link>
         </p>
         <div className="flex gap-4">
           <CreditCard className="text-white/30 h-5 w-5" />

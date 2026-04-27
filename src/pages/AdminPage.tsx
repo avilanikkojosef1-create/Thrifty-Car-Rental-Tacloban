@@ -19,7 +19,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'fleet' | 'blogs' | 'bookings'>('fleet');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  const [vehicleForm, setVehicleForm] = useState({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', specifications: '', imageUrl: '' });
+  const [vehicleForm, setVehicleForm] = useState({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', transmission: 'Automatic', fuel: 'Gasoline', seats: '5', imageUrl: '' });
+  const [vehicleImageFile, setVehicleImageFile] = useState<File | null>(null);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [saveError, setSaveError] = useState('');
@@ -40,14 +41,64 @@ export default function AdminPage() {
     setSaveStatus('loading');
     setSaveError('');
     try {
+      let imageUrl = vehicleForm.imageUrl;
+      if (vehicleImageFile) {
+        const fileToBase64 = (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+
+                if (width > height) {
+                  if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                  }
+                } else {
+                  if (height > MAX_HEIGHT) {
+                    width = Math.round((width * MAX_HEIGHT) / height);
+                    height = MAX_HEIGHT;
+                  }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, width, height);
+                  resolve(canvas.toDataURL('image/jpeg', 0.7));
+                } else {
+                  resolve(event.target?.result as string);
+                }
+              };
+              img.onerror = error => reject(error);
+              img.src = event.target?.result as string;
+            };
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+          });
+        };
+        try {
+          imageUrl = await fileToBase64(vehicleImageFile);
+        } catch (err: any) {
+          console.error("Base64 conversion error:", err);
+          throw new Error("Failed to process image file");
+        }
+      }
+
       const vehicleData = {
         name: vehicleForm.name,
         category: vehicleForm.category,
         daily_rate: parseFloat(vehicleForm.dailyRate),
         carwash_fee: parseFloat(vehicleForm.carwashFee) || 0,
         extension_fee: parseFloat(vehicleForm.extensionFee) || 0,
-        specifications: vehicleForm.specifications,
-        image_url: vehicleForm.imageUrl
+        specifications: `${vehicleForm.seats} Seater • ${vehicleForm.transmission} • ${vehicleForm.fuel}`,
+        image_url: imageUrl
       };
 
       const { error } = editingVehicleId
@@ -60,7 +111,8 @@ export default function AdminPage() {
         setIsModalOpen(false);
         setSaveStatus('idle');
         setEditingVehicleId(null);
-        setVehicleForm({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', specifications: '', imageUrl: '' });
+        setVehicleForm({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', transmission: 'Automatic', fuel: 'Gasoline', seats: '5', imageUrl: '' });
+        setVehicleImageFile(null);
         fetchVehicles();
       }, 2000);
     } catch (err: any) {
@@ -71,15 +123,35 @@ export default function AdminPage() {
 
   const handleEditVehicle = (vehicle: any) => {
     setEditingVehicleId(vehicle.id);
+    
+    let transmission = 'Automatic';
+    let fuel = 'Gasoline';
+    let seats = '5';
+    
+    if (vehicle.specifications) {
+      const parts = vehicle.specifications.split(' • ');
+      if (parts.length >= 3) {
+        const seatsMatch = parts[0].match(/(\d+)/);
+        if (seatsMatch) seats = seatsMatch[1];
+        transmission = parts[1];
+        fuel = parts[2];
+      } else {
+        transmission = vehicle.specifications;
+      }
+    }
+
     setVehicleForm({
       name: vehicle.name,
       category: vehicle.category,
-      dailyRate: vehicle.daily_rate.toString(),
-      carwashFee: vehicle.carwash_fee.toString(),
+      dailyRate: vehicle.daily_rate?.toString() || '',
+      carwashFee: vehicle.carwash_fee?.toString() || '',
       extensionFee: (vehicle.extension_fee || 0).toString(),
-      specifications: vehicle.specifications,
-      imageUrl: vehicle.image_url
+      transmission,
+      fuel,
+      seats,
+      imageUrl: vehicle.image_url || ''
     });
+    setVehicleImageFile(null);
     setSaveStatus('idle');
     setSaveError('');
     setIsModalOpen(true);
@@ -87,7 +159,8 @@ export default function AdminPage() {
 
   const handleAddVehicleClick = () => {
     setEditingVehicleId(null);
-    setVehicleForm({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', specifications: '', imageUrl: '' });
+    setVehicleForm({ name: '', category: 'SUV', dailyRate: '', carwashFee: '', extensionFee: '', transmission: 'Automatic', fuel: 'Gasoline', seats: '5', imageUrl: '' });
+    setVehicleImageFile(null);
     setSaveStatus('idle');
     setSaveError('');
     setIsModalOpen(true);
@@ -111,6 +184,18 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
+  const [confirmDeleteBookingId, setConfirmDeleteBookingId] = useState<string | null>(null);
+
+  const handleDeleteBooking = async (id: string) => {
+    setDeleteError('');
+    setConfirmDeleteBookingId(null);
+    const { error } = await supabase.from('bookings').delete().eq('id', id);
+    if (!error) {
+      fetchBookings();
+    } else {
+      setDeleteError(`Delete Booking Failed: ${error.message}`);
+    }
+  };
   const handleDeleteBlog = async (id: string) => {
     setDeleteError('');
     setConfirmDeleteBlogId(null);
@@ -134,9 +219,41 @@ export default function AdminPage() {
         const fileToBase64 = (file: File): Promise<string> => {
           return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
+            reader.onload = (event) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+
+                if (width > height) {
+                  if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                  }
+                } else {
+                  if (height > MAX_HEIGHT) {
+                    width = Math.round((width * MAX_HEIGHT) / height);
+                    height = MAX_HEIGHT;
+                  }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, width, height);
+                  resolve(canvas.toDataURL('image/jpeg', 0.7));
+                } else {
+                  resolve(event.target?.result as string);
+                }
+              };
+              img.onerror = error => reject(error);
+              img.src = event.target?.result as string;
+            };
             reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
           });
         };
         
@@ -225,6 +342,13 @@ export default function AdminPage() {
   const handleDeleteVehicle = async (id: string) => {
     setDeleteError('');
     setConfirmDeleteId(null);
+    
+    // Attempt to delete any associated bookings first to prevent foreign key constraint violations
+    const { error: bookingsError } = await supabase.from('bookings').delete().eq('vehicle_id', id);
+    if (bookingsError) {
+      console.warn("Error deleting associated bookings:", bookingsError);
+    }
+    
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
     if (!error) {
       fetchVehicles();
@@ -483,6 +607,18 @@ export default function AdminPage() {
                           Reject
                         </button>
                       )}
+                      
+                      {confirmDeleteBookingId === b.id ? (
+                        <div className="flex items-center gap-1 ml-2">
+                          <span className="text-xs text-red-600 font-bold">Sure?</span>
+                          <button onClick={() => handleDeleteBooking(b.id)} className="px-2 py-1 bg-red-500 text-white rounded text-xs ml-1">Yes</button>
+                          <button onClick={() => setConfirmDeleteBookingId(null)} className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs ml-1">No</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmDeleteBookingId(b.id)} className="px-3 py-2 text-red-500 hover:text-red-700 font-bold text-xs ml-2 transition-colors">
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -648,6 +784,10 @@ export default function AdminPage() {
                 <form id="fleet-form" className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
+                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Vehicle Image {editingVehicleId && '(Leave blank to keep existing)'}</label>
+                      <input type="file" accept="image/jpeg, image/png" onChange={e => { if (e.target.files && e.target.files[0]) setVehicleImageFile(e.target.files[0]); }} className="w-full px-4 py-2.5 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm bg-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-gold/10 file:text-primary-gold file:font-semibold hover:file:bg-primary-gold/20 cursor-pointer" />
+                    </div>
+                    <div className="md:col-span-2">
                       <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Vehicle Name</label>
                       <input type="text" value={vehicleForm.name} onChange={e => setVehicleForm({...vehicleForm, name: e.target.value})} required placeholder="e.g., Premium Explorer" className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
                     </div>
@@ -658,11 +798,33 @@ export default function AdminPage() {
                         <option>Sedan</option>
                         <option>Van</option>
                         <option>MPV</option>
+                        <option>Pickup Truck</option>
+                        <option>Hatchback</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Daily Rate (₱)</label>
+                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Price (Daily Rate ₱)</label>
                       <input type="number" required value={vehicleForm.dailyRate} onChange={e => setVehicleForm({...vehicleForm, dailyRate: e.target.value})} placeholder="e.g., 3500" className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
+                    </div>
+                    <div>
+                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Transmission</label>
+                      <select value={vehicleForm.transmission} onChange={e => setVehicleForm({...vehicleForm, transmission: e.target.value})} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm bg-white">
+                        <option>Automatic</option>
+                        <option>Manual</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Fuel</label>
+                      <select value={vehicleForm.fuel} onChange={e => setVehicleForm({...vehicleForm, fuel: e.target.value})} className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm bg-white">
+                        <option>Gasoline</option>
+                        <option>Diesel</option>
+                        <option>Electric</option>
+                        <option>Hybrid</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Seats</label>
+                      <input type="number" required value={vehicleForm.seats} onChange={e => setVehicleForm({...vehicleForm, seats: e.target.value})} placeholder="e.g., 5" className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
                     </div>
                     <div>
                       <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Carwash Fee (₱)</label>
@@ -671,14 +833,6 @@ export default function AdminPage() {
                     <div className="md:col-span-2">
                       <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Extension Fee/Hr (₱)</label>
                       <input type="number" required value={vehicleForm.extensionFee} onChange={e => setVehicleForm({...vehicleForm, extensionFee: e.target.value})} placeholder="e.g., 300" className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Specifications</label>
-                      <input type="text" required value={vehicleForm.specifications} onChange={e => setVehicleForm({...vehicleForm, specifications: e.target.value})} placeholder="e.g., 7 Seater • Auto • AWD" className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block font-inter text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Image URL</label>
-                      <input type="url" required value={vehicleForm.imageUrl} onChange={e => setVehicleForm({...vehicleForm, imageUrl: e.target.value})} placeholder="https://..." className="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary-gold font-inter text-sm" />
                     </div>
                   </div>
                 </form>
