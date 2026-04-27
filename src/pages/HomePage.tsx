@@ -73,20 +73,14 @@ export default function HomePage() {
       {/* Hero Section */}
       <section id="home" className="relative flex min-h-[700px] md:min-h-[850px] w-full items-center justify-center text-center overflow-hidden pt-12 pb-24">
         
-        {/* Mobile Image */}
-        <img
-          alt="Premium SUV - Thrifty Car Rental Tacloban"
-          className="absolute inset-0 h-full w-full object-cover block md:hidden"
-          src="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=2000"
-        />
-
-        {/* Desktop Video */}
+        {/* Background Video */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 h-full w-full object-cover hidden md:block"
+          poster="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=2000"
+          className="absolute inset-0 h-full w-full object-cover"
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
