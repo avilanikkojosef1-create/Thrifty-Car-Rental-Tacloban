@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Banknote, Calendar, Headset, MapPin, Star, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import heroVideo from '../assets/video.mp4';
 import { supabase } from '../lib/supabase';
 
 // Helper to convert Google Drive viewing links into raw image source links
@@ -78,10 +79,9 @@ export default function HomePage() {
           loop
           muted
           playsInline
-          poster="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=2000"
           className="absolute inset-0 h-full w-full object-cover"
         >
-          <source src="/video.mp4" type="video/mp4" />
+          <source src={heroVideo} type="video/mp4" />
         </video>
 
         {/* Dark semi-transparent gradient overlay */}
