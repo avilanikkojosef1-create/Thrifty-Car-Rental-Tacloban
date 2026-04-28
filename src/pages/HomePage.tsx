@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Banknote, Calendar, Headset, MapPin, Star, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -28,6 +28,20 @@ export default function HomePage() {
   const [blogs, setBlogs] = useState<any[]>([]);
   const [selectedBlog, setSelectedBlog] = useState<any | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log("Autoplay prevented:", error);
+        });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,14 +85,16 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section id="home" className="relative flex min-h-[700px] md:min-h-[850px] w-full items-center justify-center text-center overflow-hidden pt-12 pb-24">
+      <section id="home" className="relative flex min-h-[700px] md:min-h-[850px] w-full items-center justify-center text-center overflow-hidden pt-12 pb-24 bg-[#1a1a1a]">
         
         {/* Background Video */}
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          defaultMuted
           className="absolute inset-0 h-full w-full object-cover"
         >
           <source src={heroVideo} type="video/mp4" />
