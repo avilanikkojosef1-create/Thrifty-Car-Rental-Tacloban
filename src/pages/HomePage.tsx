@@ -79,7 +79,6 @@ export default function HomePage() {
           loop
           muted
           playsInline
-          poster="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=2000"
           className="absolute inset-0 h-full w-full object-cover"
         >
           <source src={heroVideo} type="video/mp4" />
