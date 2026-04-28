@@ -4,7 +4,6 @@ import { Banknote, Calendar, Headset, MapPin, Star, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
-import heroVideo from '../assets/video.mp4';
 
 // Helper to convert Google Drive viewing links into raw image source links
 const formatImageUrl = (url: string) => {
@@ -74,21 +73,15 @@ export default function HomePage() {
       <section id="home" className="relative flex min-h-[700px] md:min-h-[850px] w-full items-center justify-center text-center overflow-hidden pt-12 pb-24 bg-[#1a1a1a]">
         
         {/* Background Video */}
-        <div 
-          className="absolute inset-0 h-full w-full"
-          dangerouslySetInnerHTML={{
-            __html: `
-              <video 
-                autoplay 
-                loop 
-                muted 
-                playsinline 
-                class="absolute inset-0 h-full w-full object-cover">
-                <source src="${heroVideo}" type="video/mp4" />
-              </video>
-            `
-          }}
-        />
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="https://sokmiwalfephqivufpcb.supabase.co/storage/v1/object/public/public-assets/San_Juanico_Bridge_aerial_shot_202604290647.mp4" type="video/mp4" />
+        </video>
 
         {/* Dark semi-transparent gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-charcoal/70 via-charcoal/60 to-charcoal/90 z-10"></div>
