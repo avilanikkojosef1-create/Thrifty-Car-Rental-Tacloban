@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Banknote, Calendar, Headset, MapPin, Star, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
+import heroVideo from '../assets/video.mp4';
 
 // Helper to convert Google Drive viewing links into raw image source links
 const formatImageUrl = (url: string) => {
@@ -27,20 +28,6 @@ export default function HomePage() {
   const [blogs, setBlogs] = useState<any[]>([]);
   const [selectedBlog, setSelectedBlog] = useState<any | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log("Autoplay prevented:", error);
-        });
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,17 +74,21 @@ export default function HomePage() {
       <section id="home" className="relative flex min-h-[700px] md:min-h-[850px] w-full items-center justify-center text-center overflow-hidden pt-12 pb-24 bg-[#1a1a1a]">
         
         {/* Background Video */}
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          defaultMuted
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source src="/video.mp4" type="video/mp4" />
-        </video>
+        <div 
+          className="absolute inset-0 h-full w-full"
+          dangerouslySetInnerHTML={{
+            __html: `
+              <video 
+                autoplay 
+                loop 
+                muted 
+                playsinline 
+                class="absolute inset-0 h-full w-full object-cover">
+                <source src="${heroVideo}" type="video/mp4" />
+              </video>
+            `
+          }}
+        />
 
         {/* Dark semi-transparent gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-charcoal/70 via-charcoal/60 to-charcoal/90 z-10"></div>
