@@ -2,6 +2,9 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,8 +19,16 @@ app.use(express.static(distPath, { index: false })); // Don't serve index.html a
 
 // For all other routes, serve index.html with injected runtime env vars (SPA routing)
 app.get('*', (req, res) => {
+  // If the request looks like a file (has an extension) but wasn't served by express.static, return 404
+  if (req.path.includes('.') && !req.path.endsWith('.html')) {
+    return res.status(404).send('Not Found');
+  }
+
   const indexPath = path.join(distPath, 'index.html');
   try {
+    if (!fs.existsSync(indexPath)) {
+      return res.status(404).send('Not Found: the build output is missing. Ensure the app is correctly built.');
+    }
     let html = fs.readFileSync(indexPath, 'utf8');
     
     // Inject runtime environment variables

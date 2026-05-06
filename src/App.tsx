@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import HomePage from './pages/HomePage';
 import FleetPage from './pages/FleetPage';
@@ -32,6 +32,16 @@ export default function App() {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/airport-guide" element={<AirportGuidePage />} />
         <Route path="/sitemap" element={<SitemapPage />} />
+        {/* Catch-all route for non-existent pages */}
+        <Route path="*" element={
+          <div className="min-h-screen bg-surface-light flex flex-col items-center justify-center p-6 text-center font-inter">
+            <h1 className="text-6xl font-bold text-primary-gold mb-4 font-poppins">404</h1>
+            <p className="text-xl text-charcoal/70 mb-8">Oops! The page you're looking for doesn't exist.</p>
+            <Link to="/" className="bg-charcoal text-white px-8 py-3 rounded-lg font-bold hover:shadow-lg transition-all">
+              Go Back Home
+            </Link>
+          </div>
+        } />
       </Routes>
     </BrowserRouter>
   );
